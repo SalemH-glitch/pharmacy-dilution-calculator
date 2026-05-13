@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pharmaceutical Dilution Calculator</title>
+  <link rel="stylesheet" href="rx-bar.css">
   <style>
     /* ═══════════════════════════════════════════════════════════
        CSS CUSTOM PROPERTIES — one place to adjust the theme
@@ -1996,5 +1997,35 @@ $('details-done-btn').addEventListener('click',  () => $('details-modal').close(
 checkAuth();
 </script>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="rx-bar.js"></script>
+<script>
+// RxBar integration — auth guard + patient widget + save calculations
+// Note: This calculator requires its backend API to be deployed separately.
+// The RxBar provides Supabase auth in addition to the existing session auth.
+if (window.RxBar) {
+  const _dilBar = new RxBar('dilution');
+  document.addEventListener('rxb:patient-selected', e => {
+    // Pre-fill patient context if field exists
+    const pc = document.getElementById('patient-context');
+    if (pc) {
+      const opt = document.createElement('option');
+      opt.value = e.detail.patient_id;
+      opt.textContent = `${e.detail.first_name} ${e.detail.last_name} (${e.detail.patient_id})`;
+      opt.selected = true;
+      pc.appendChild(opt);
+    }
+    // Intercept the calculate button to also save to Supabase
+    const calcBtn = document.querySelector('[id*="calc"], button.btn-primary');
+    if (calcBtn && !calcBtn._rxbWrapped) {
+      calcBtn._rxbWrapped = true;
+      calcBtn.addEventListener('click', () => {
+        const drug = document.querySelector('[id*="drug"]')?.value || 'unknown';
+        _dilBar.saveCalculation('Dilution', { drug }, { calculated: true });
+      }, true);
+    }
+  });
+}
+</script>
 </body>
 </html>
