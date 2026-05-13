@@ -1,0 +1,2000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pharmaceutical Dilution Calculator</title>
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       CSS CUSTOM PROPERTIES — one place to adjust the theme
+    ═══════════════════════════════════════════════════════════ */
+    :root {
+      --primary:       #1a5276;   /* deep clinical blue */
+      --primary-mid:   #2e86c1;
+      --primary-light: #d6eaf8;
+      --accent:        #3498db;
+      --success:       #1e8449;
+      --success-bg:    #d5f5e3;
+      --warn:          #b7770d;
+      --warn-bg:       #fef3cd;
+      --danger:        #c0392b;
+      --danger-bg:     #fadbd8;
+      --text:          #1c2833;
+      --muted:         #5d6d7e;
+      --border:        #d5d8dc;
+      --bg:            #eaf2fb;
+      --card:          #ffffff;
+      --shadow:        0 2px 10px rgba(26,82,118,.10);
+      --radius:        10px;
+      --radius-sm:     6px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       RESET & BASE
+    ═══════════════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    a { color: var(--primary-mid); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    input, select, textarea, button {
+      font: inherit;
+      color: inherit;
+    }
+    .hidden { display: none !important; }
+
+    /* ═══════════════════════════════════════════════════════════
+       UTILITY
+    ═══════════════════════════════════════════════════════════ */
+    .flex { display: flex; }
+    .flex-1 { flex: 1; }
+    .flex-2 { flex: 2; }
+    .gap-sm { gap: .5rem; }
+    .gap-md { gap: 1rem; }
+    .required { color: var(--danger); }
+    .optional { color: var(--muted); font-size: .85em; }
+
+    /* ═══════════════════════════════════════════════════════════
+       BUTTONS
+    ═══════════════════════════════════════════════════════════ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .5rem 1.1rem;
+      border-radius: var(--radius-sm);
+      border: 2px solid transparent;
+      cursor: pointer;
+      font-size: .9rem;
+      font-weight: 600;
+      transition: all .15s ease;
+      white-space: nowrap;
+    }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-mid); border-color: var(--primary-mid); }
+    .btn-outline {
+      background: transparent;
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+    .btn-outline:hover:not(:disabled) { background: var(--primary-light); }
+    .btn-outline-light {
+      background: transparent;
+      color: #fff;
+      border-color: rgba(255,255,255,.7);
+    }
+    .btn-outline-light:hover { background: rgba(255,255,255,.15); }
+    .btn-large { padding: .75rem 2rem; font-size: 1rem; }
+    .btn-full { width: 100%; justify-content: center; }
+    .btn-icon {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: .25rem .5rem;
+      font-size: 1.1rem;
+    }
+    .btn-icon:hover { color: var(--text); }
+
+    /* ═══════════════════════════════════════════════════════════
+       FORM CONTROLS
+    ═══════════════════════════════════════════════════════════ */
+    .field { display: flex; flex-direction: column; gap: .3rem; }
+    .field label { font-size: .875rem; font-weight: 600; color: var(--text); }
+    .field input,
+    .field select,
+    .field textarea {
+      padding: .55rem .8rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: #fff;
+      transition: border-color .15s;
+      width: 100%;
+    }
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(52,152,219,.15);
+    }
+    .field input.invalid,
+    .field select.invalid { border-color: var(--danger); box-shadow: 0 0 0 2px rgba(192,57,43,.12); }
+    .field input.valid,
+    .field select.valid   { border-color: var(--success); box-shadow: 0 0 0 2px rgba(30,132,73,.10); }
+    .field textarea { resize: vertical; min-height: 60px; }
+    .field small { font-size: .8rem; color: var(--muted); }
+    .field-hint { font-size: .78rem; min-height: 1.1em; line-height: 1.4; }
+    .field-hint.error   { color: var(--danger); }
+    .field-hint.ok      { color: var(--success); }
+
+    /* Pre-validation warnings block inside signature modal */
+    .pre-warn-label {
+      font-size: .78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--warn);
+      margin-bottom: .4rem;
+    }
+    .pre-warnings-wrap { display: flex; flex-direction: column; gap: .45rem; margin-bottom: 1rem; }
+
+    .field-row {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .field-row .field { flex: 1; min-width: 180px; }
+    .field-divider {
+      padding-top: 1.8rem;
+      color: var(--muted);
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    /* Input with unit label (e.g. "%" or "mL") */
+    .input-with-unit {
+      display: flex;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: #fff;
+      transition: border-color .15s;
+    }
+    .input-with-unit:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(52,152,219,.15);
+    }
+    .input-with-unit input {
+      border: none;
+      flex: 1;
+      padding: .55rem .8rem;
+      background: transparent;
+      min-width: 0;
+    }
+    .input-with-unit input:focus { outline: none; box-shadow: none; }
+    .unit-label {
+      padding: .55rem .75rem;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+      font-size: .85rem;
+      border-left: 1.5px solid var(--border);
+      white-space: nowrap;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       CARD COMPONENT
+    ═══════════════════════════════════════════════════════════ */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: .75rem;
+    }
+    .card-header h2 {
+      font-size: 1.3rem;
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       AUTH SCREEN
+    ═══════════════════════════════════════════════════════════ */
+    #auth-view {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-mid) 100%);
+    }
+    .auth-container { width: 100%; max-width: 440px; }
+    .auth-logo {
+      text-align: center;
+      color: #fff;
+      margin-bottom: 1.5rem;
+    }
+    .auth-logo .logo-icon {
+      font-size: 2.5rem;
+      display: block;
+      margin-bottom: .5rem;
+    }
+    .auth-logo h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: .3rem; }
+    .auth-logo p { font-size: .9rem; opacity: .85; }
+    .auth-card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 2rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,.2);
+    }
+    .auth-card h2 {
+      font-size: 1.25rem;
+      color: var(--primary);
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+    }
+    .auth-card form { display: flex; flex-direction: column; gap: 1rem; }
+    .auth-switch {
+      margin-top: 1.25rem;
+      text-align: center;
+      font-size: .9rem;
+      color: var(--muted);
+    }
+    .error-msg {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border: 1px solid #f1948a;
+      border-radius: var(--radius-sm);
+      padding: .6rem .9rem;
+      font-size: .9rem;
+      margin-bottom: .5rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       APP HEADER
+    ═══════════════════════════════════════════════════════════ */
+    #app-header {
+      background: var(--primary);
+      color: #fff;
+      padding: .9rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .header-left { display: flex; align-items: center; gap: .75rem; }
+    .header-logo { font-size: 1.6rem; }
+    #app-header h1 { font-size: 1.1rem; font-weight: 700; }
+    .header-right { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      background: rgba(255,255,255,.15);
+      padding: .35rem .8rem;
+      border-radius: 99px;
+      font-size: .875rem;
+      font-weight: 600;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       MAIN CONTENT AREA
+    ═══════════════════════════════════════════════════════════ */
+    .main-content {
+      max-width: 860px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    .global-error {
+      background: var(--danger-bg);
+      border: 1px solid #f1948a;
+      border-radius: var(--radius-sm);
+      padding: .75rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      color: var(--danger);
+      font-weight: 600;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       CALCULATOR FORM SECTIONS
+    ═══════════════════════════════════════════════════════════ */
+    .form-section {
+      border-top: 1px solid var(--border);
+      padding-top: 1.25rem;
+      margin-top: 1.25rem;
+    }
+    .section-label {
+      font-size: .8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--primary-mid);
+      margin-bottom: .9rem;
+    }
+
+    /* 3-column concentration grid */
+    .conc-grid {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr 1fr;
+      gap: 1rem;
+      align-items: end;
+    }
+    .arrow-cell {
+      font-size: 1.5rem;
+      color: var(--muted);
+      padding-bottom: .45rem;
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      .conc-grid { grid-template-columns: 1fr; }
+      .arrow-cell { display: none; }
+    }
+
+    /* Live formula preview box */
+    .formula-preview {
+      margin-top: .9rem;
+      padding: .8rem 1rem;
+      background: var(--primary-light);
+      border-left: 4px solid var(--primary-mid);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: .9rem;
+      min-height: 2.5rem;
+    }
+    .formula-preview .preview-formula { font-family: "Courier New", monospace; font-size: .95rem; }
+    .formula-preview .preview-formula em { color: var(--primary); font-style: normal; font-size: 1.1rem; }
+    .formula-preview .preview-result { margin-top: .35rem; color: var(--muted); }
+    .formula-preview .preview-hint { color: var(--muted); font-style: italic; }
+    .formula-preview .preview-error { color: var(--danger); font-weight: 600; }
+
+    /* Info cards for drug limits and diluent details */
+    .info-card {
+      background: var(--primary-light);
+      border: 1px solid #a9cce3;
+      border-radius: var(--radius-sm);
+      padding: .75rem 1rem;
+      font-size: .875rem;
+    }
+    .info-card strong { display: block; color: var(--primary); margin-bottom: .3rem; }
+    .limits-row { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: .3rem; color: var(--muted); }
+    .limits-row strong { display: inline; color: var(--text); }
+    .safety-note { color: var(--warn); margin-top: .3rem; font-size: .82rem; }
+
+    /* Form action row */
+    .form-actions {
+      margin-top: 1.5rem;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       RESULTS PANEL
+    ═══════════════════════════════════════════════════════════ */
+    .result-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+    /* Main result numbers */
+    .result-main {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-mid) 100%);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 1.5rem 2rem;
+      margin-bottom: 1rem;
+    }
+    .result-main .result-row {
+      display: flex;
+      align-items: baseline;
+      gap: .5rem;
+      margin-bottom: .5rem;
+    }
+    .result-main .result-label { font-size: .9rem; opacity: .85; min-width: 260px; }
+    .result-main .result-value { font-size: 2rem; font-weight: 700; }
+    .result-main .result-unit { font-size: 1rem; opacity: .8; }
+    .result-main .result-instructions {
+      margin-top: 1rem;
+      padding-top: .9rem;
+      border-top: 1px solid rgba(255,255,255,.3);
+      font-size: .95rem;
+      line-height: 1.6;
+      opacity: .95;
+    }
+    .result-main .result-instructions strong { font-weight: 700; }
+
+    /* Warning / PASS banners */
+    .warnings-wrap { display: flex; flex-direction: column; gap: .6rem; margin-bottom: 1rem; }
+    .status-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: .75rem;
+      padding: .75rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: .9rem;
+    }
+    .status-banner.pass { background: var(--success-bg); color: var(--success); border: 1px solid #a9dfb5; }
+    .status-banner.warn { background: var(--warn-bg); color: var(--warn); border: 1px solid #fad7a0; }
+    .status-banner.fail { background: var(--danger-bg); color: var(--danger); border: 1px solid #f1948a; }
+    .status-banner .banner-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: .05rem; }
+    .status-banner .banner-code { font-weight: 700; margin-right: .4rem; font-size: .8rem; letter-spacing: .04em; }
+
+    /* Audit trail footer */
+    .audit-footer {
+      background: #f8f9fa;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: .9rem 1rem;
+      font-size: .85rem;
+      color: var(--muted);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: .4rem .75rem;
+    }
+    .audit-footer .audit-item strong { color: var(--text); }
+    .status-chip {
+      display: inline-block;
+      padding: .15rem .55rem;
+      border-radius: 99px;
+      font-size: .78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .chip-pass { background: var(--success-bg); color: var(--success); }
+    .chip-warn { background: var(--warn-bg); color: var(--warn); }
+    .chip-fail { background: var(--danger-bg); color: var(--danger); }
+
+    /* ═══════════════════════════════════════════════════════════
+       HISTORY SECTION
+    ═══════════════════════════════════════════════════════════ */
+    .history-toggle-bar {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .history-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+    /* Responsive history table */
+    .history-table-scroll { overflow-x: auto; }
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .875rem;
+    }
+    .history-table th {
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+      padding: .65rem .9rem;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .history-table td {
+      padding: .6rem .9rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .history-table tr:hover td { background: #f5fbff; }
+    .history-table .mono { font-family: "Courier New", monospace; }
+    .empty-state {
+      text-align: center;
+      padding: 2.5rem;
+      color: var(--muted);
+    }
+    .empty-state p { margin-top: .5rem; font-size: .9rem; }
+
+    /* ═══════════════════════════════════════════════════════════
+       MODALS  (uses native <dialog> element)
+    ═══════════════════════════════════════════════════════════ */
+    dialog {
+      border: none;
+      border-radius: var(--radius);
+      box-shadow: 0 8px 40px rgba(0,0,0,.25);
+      padding: 0;
+      max-width: 540px;
+      width: 95vw;
+    }
+    dialog::backdrop {
+      background: rgba(0,0,0,.45);
+    }
+    .modal-content { display: flex; flex-direction: column; }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 1.5rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-header h2 { font-size: 1.15rem; color: var(--primary); }
+    .modal-body { padding: 1.25rem 1.5rem; }
+    .modal-footer {
+      padding: 1rem 1.5rem 1.25rem;
+      display: flex;
+      justify-content: flex-end;
+      gap: .75rem;
+      border-top: 1px solid var(--border);
+    }
+    .modal-large { max-width: 700px; }
+
+    .signature-statement {
+      background: var(--primary-light);
+      border-left: 4px solid var(--primary);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      padding: 1rem 1.1rem;
+      font-size: .95rem;
+      line-height: 1.7;
+      margin-bottom: 1.25rem;
+      color: var(--text);
+    }
+    .checkbox-wrap {
+      display: flex;
+      gap: .65rem;
+      align-items: flex-start;
+      font-size: .9rem;
+      line-height: 1.5;
+    }
+    .checkbox-wrap input[type="checkbox"] {
+      width: 1.1rem;
+      height: 1.1rem;
+      flex-shrink: 0;
+      margin-top: .15rem;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+    .checkbox-wrap label { cursor: pointer; }
+
+    /* Details modal content */
+    .detail-section { margin-bottom: 1.25rem; }
+    .detail-section h4 {
+      font-size: .8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--primary-mid);
+      margin-bottom: .6rem;
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .35rem .75rem;
+      font-size: .875rem;
+    }
+    .detail-grid dt { color: var(--muted); }
+    .detail-grid dd { font-weight: 600; }
+
+    /* ═══════════════════════════════════════════════════════════
+       LOADING SPINNER
+    ═══════════════════════════════════════════════════════════ */
+    .spinner {
+      display: inline-block;
+      width: 1em;
+      height: 1em;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spin .65s linear infinite;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ═══════════════════════════════════════════════════════════
+       PRINT STYLES — show only results, hide everything else
+    ═══════════════════════════════════════════════════════════ */
+    @media print {
+      body * { visibility: hidden; }
+      #results-card, #results-card * { visibility: visible; }
+      #results-card {
+        position: absolute;
+        inset: 0;
+        margin: 0;
+        box-shadow: none;
+        border-radius: 0;
+      }
+      .no-print { display: none !important; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       RESPONSIVE ADJUSTMENTS
+    ═══════════════════════════════════════════════════════════ */
+    @media (max-width: 600px) {
+      .card { padding: 1.1rem; }
+      .main-content { margin: 1rem auto; }
+      #app-header h1 { font-size: .9rem; }
+      .result-main .result-value { font-size: 1.5rem; }
+      .result-main .result-label { min-width: unset; font-size: .8rem; }
+      .detail-grid { grid-template-columns: 1fr; }
+      .audit-footer { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     AUTH VIEW — visible when the user is not logged in
+═══════════════════════════════════════════════════════════════════ -->
+<div id="auth-view">
+  <div class="auth-container">
+
+    <!-- Branding -->
+    <div class="auth-logo">
+      <span class="logo-icon">⚗️</span>
+      <h1>Pharmaceutical Dilution Calculator</h1>
+      <p>Secure calculation with full audit trail</p>
+    </div>
+
+    <!-- ── Login Card ─────────────────────────────────────────── -->
+    <div id="login-wrap" class="auth-card">
+      <h2>Sign In</h2>
+      <div id="login-error" class="error-msg hidden" role="alert"></div>
+      <form id="login-form" novalidate autocomplete="on">
+        <div class="field">
+          <label for="login-username">Username</label>
+          <input type="text" id="login-username" autocomplete="username" required placeholder="your_username" />
+        </div>
+        <div class="field">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" autocomplete="current-password" required placeholder="••••••••" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="login-btn">Sign In</button>
+      </form>
+      <p class="auth-switch">Need an account? <a href="#" id="go-register">Register here</a></p>
+    </div>
+
+    <!-- ── Register Card (hidden until "Register" link clicked) ── -->
+    <div id="register-wrap" class="auth-card hidden">
+      <h2>Create Account</h2>
+      <div id="register-error" class="error-msg hidden" role="alert"></div>
+      <form id="register-form" novalidate autocomplete="off">
+        <div class="field-row">
+          <div class="field flex-2">
+            <label for="reg-username">Username <span class="required">*</span></label>
+            <input type="text" id="reg-username" required minlength="3" maxlength="30" placeholder="jsmith" />
+            <span class="field-hint" id="hint-username"></span>
+          </div>
+          <div class="field flex-2">
+            <label for="reg-email">Email <span class="required">*</span></label>
+            <input type="email" id="reg-email" required placeholder="j.smith@hospital.org" />
+            <span class="field-hint" id="hint-email"></span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="reg-password">Password <span class="required">*</span></label>
+          <input type="password" id="reg-password" required minlength="8" placeholder="Minimum 8 characters" />
+          <span class="field-hint" id="hint-password"></span>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="reg-fullname">Full Name <span class="required">*</span></label>
+            <input type="text" id="reg-fullname" required placeholder="Jane Smith" maxlength="100" />
+            <span class="field-hint" id="hint-fullname"></span>
+          </div>
+          <div class="field">
+            <label for="reg-credentials">Credentials <span class="required">*</span></label>
+            <input type="text" id="reg-credentials" required placeholder="PharmD, RPh" maxlength="100" />
+            <span class="field-hint" id="hint-credentials"></span>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="register-btn">Create Account</button>
+      </form>
+      <p class="auth-switch"><a href="#" id="go-login">← Back to Sign In</a></p>
+    </div>
+
+  </div>
+</div><!-- /#auth-view -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     APP VIEW — visible only when authenticated
+═══════════════════════════════════════════════════════════════════ -->
+<div id="app-view" class="hidden">
+
+  <!-- ── Sticky Header ─────────────────────────────────────────── -->
+  <header id="app-header">
+    <div class="header-left">
+      <span class="header-logo">⚗️</span>
+      <h1>Pharmaceutical Dilution Calculator</h1>
+    </div>
+    <div class="header-right">
+      <div class="user-badge">
+        <span>👤</span>
+        <span id="header-user-name">Loading…</span>
+      </div>
+      <button class="btn btn-outline-light" id="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <main class="main-content">
+
+    <!-- Global dismissable error banner -->
+    <div id="global-error" class="global-error hidden" role="alert">
+      <span id="global-error-msg"></span>
+      <button class="btn btn-icon" onclick="document.getElementById('global-error').classList.add('hidden')">✕</button>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         CALCULATOR FORM
+    ═══════════════════════════════════════════════════════════ -->
+    <section id="calculator-card" class="card">
+      <div class="card-header">
+        <h2>New Calculation</h2>
+        <button class="btn btn-outline" id="example-btn">
+          Load Example: Gentamicin 40→2 mg/mL
+        </button>
+      </div>
+
+      <!-- ── Section 1: Drug ─────────────────────────────────── -->
+      <div class="form-section">
+        <h3 class="section-label">1 · Drug Selection</h3>
+        <div class="field-row">
+          <!-- Populated from /api/drugs after login -->
+          <div class="field flex-2">
+            <label for="drug-search">Select from Database</label>
+            <input type="text" id="drug-search" placeholder="Search drugs…" autocomplete="off"
+              style="margin-bottom:.35rem" />
+            <select id="drug-select" size="1">
+              <option value="">— None (no database entry) —</option>
+            </select>
+          </div>
+          <div class="field-divider">or</div>
+          <!-- Free-text fallback for drugs not yet in the database -->
+          <div class="field flex-2">
+            <label for="drug-manual">Enter Drug Name Manually</label>
+            <input type="text" id="drug-manual" placeholder="e.g. Vancomycin" maxlength="200" />
+          </div>
+        </div>
+        <!-- Shown only when a database drug with safety limits is selected -->
+        <div id="drug-limits-card" class="info-card hidden" style="margin-top:.75rem">
+          <strong>Safety Limits — <span id="drug-limits-name"></span></strong>
+          <div class="limits-row">
+            <span>Min: <strong id="drug-min">—</strong></span>
+            <span>Default: <strong id="drug-default">—</strong></span>
+            <span>Max: <strong id="drug-max">—</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Section 2: Concentrations & Volume ─────────────── -->
+      <div class="form-section">
+        <h3 class="section-label">2 · Concentrations &amp; Volume</h3>
+        <div class="field" style="max-width:220px;margin-bottom:.85rem">
+          <label for="conc-unit">Concentration Unit</label>
+          <select id="conc-unit">
+            <option value="mg/mL" selected>mg/mL (default)</option>
+            <option value="mcg/mL">mcg/mL</option>
+            <option value="g/mL">g/mL</option>
+            <option value="mEq/mL">mEq/mL (electrolytes)</option>
+            <option value="units/mL">units/mL (insulin, heparin)</option>
+          </select>
+        </div>
+        <div class="conc-grid">
+          <div class="field">
+            <label for="c1">C1 — Initial (Stock) Concentration</label>
+            <div class="input-with-unit">
+              <input type="number" id="c1" min="0" step="any" placeholder="e.g. 40" />
+              <span class="unit-label" id="c1-unit-label">mg/mL</span>
+            </div>
+          </div>
+          <!-- Visual arrow between C1 and C2 -->
+          <div class="arrow-cell" aria-hidden="true">→</div>
+          <div class="field">
+            <label for="c2">C2 — Desired Final Concentration</label>
+            <div class="input-with-unit">
+              <input type="number" id="c2" min="0" step="any" placeholder="e.g. 2" />
+              <span class="unit-label" id="c2-unit-label">mg/mL</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="v2">V2 — Final Volume Needed</label>
+            <div class="input-with-unit">
+              <input type="number" id="v2" min="0" step="any" placeholder="e.g. 100" />
+              <span class="unit-label">mL</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live preview updates as the user types — no server call needed -->
+        <div id="live-preview" class="formula-preview">
+          <span class="preview-hint">Enter C1, C2, and V2 above to see the formula preview.</span>
+        </div>
+      </div>
+
+      <!-- ── Section 3: Diluent ─────────────────────────────── -->
+      <div class="form-section">
+        <h3 class="section-label">3 · Diluent</h3>
+        <div class="field-row" style="align-items:flex-start">
+          <!-- Populated from /api/diluents after login -->
+          <div class="field flex-2">
+            <label for="diluent-select">Select Diluent</label>
+            <select id="diluent-select">
+              <option value="">— None selected —</option>
+            </select>
+          </div>
+          <!-- Shows diluent concentration and safety notes when one is selected -->
+          <div id="diluent-info-card" class="info-card flex-1 hidden" style="margin-top:1.6rem">
+            <strong id="diluent-info-name"></strong>
+            <div style="color:var(--muted)">Concentration: <strong id="diluent-info-conc"></strong></div>
+            <div class="safety-note" id="diluent-safety-note"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Section 4: Clinical Context ───────────────────── -->
+      <div class="form-section">
+        <h3 class="section-label">4 · Context &amp; Purpose</h3>
+        <div class="field-row">
+          <div class="field">
+            <label for="intended-use">Intended Use</label>
+            <select id="intended-use">
+              <option value="">— Select intended use —</option>
+              <option>TPN Preparation</option>
+              <option>IV Medication</option>
+              <option>Irrigation Solution</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="patient-context">Patient Context <span class="optional">(no PHI)</span></label>
+            <select id="patient-context">
+              <option value="">— Select context —</option>
+              <option>Pediatric</option>
+              <option>Neonatal</option>
+              <option>NICU</option>
+              <option>Adult ICU</option>
+              <option>Adult General</option>
+              <option>Oncology</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin-top:.75rem">
+          <label for="notes-input">Notes <span class="optional">(optional, max 1000 chars)</span></label>
+          <textarea id="notes-input" rows="2" maxlength="1000"
+            placeholder="Any preparation notes, batch numbers, or special instructions…"></textarea>
+        </div>
+      </div>
+
+      <!-- ── Action Row ─────────────────────────────────────── -->
+      <!-- Clicking "Calculate & Sign" opens the signature modal, not the API -->
+      <div class="form-actions">
+        <button class="btn btn-primary btn-large" id="calculate-btn">
+          Calculate &amp; Sign ›
+        </button>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         RESULTS PANEL  (hidden until a calculation completes)
+    ═══════════════════════════════════════════════════════════ -->
+    <section id="results-card" class="card hidden">
+      <div class="card-header">
+        <h2>Calculation Results</h2>
+        <div class="result-actions no-print">
+          <button class="btn btn-outline" onclick="window.print()">🖨 Print</button>
+          <button class="btn btn-outline" id="new-calc-btn">New Calculation</button>
+          <button class="btn btn-outline" id="view-history-from-results">View History</button>
+        </div>
+      </div>
+
+      <!-- Large prominent numbers -->
+      <div id="result-main"></div>
+
+      <!-- Safety warnings (FAIL = red, WARN = yellow, no warnings = green PASS) -->
+      <div id="result-warnings"></div>
+
+      <!-- Audit trail metadata footer -->
+      <div id="result-audit" class="audit-footer"></div>
+    </section>
+
+    <!-- ── History toggle (always visible in app, hidden on print) ── -->
+    <div class="history-toggle-bar no-print">
+      <button class="btn btn-outline" id="history-toggle-btn">📋 View Calculation History</button>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         HISTORY PANEL  (toggled by button above)
+    ═══════════════════════════════════════════════════════════ -->
+    <section id="history-card" class="card hidden no-print">
+      <div class="card-header">
+        <h2>Calculation History</h2>
+        <div class="history-actions">
+          <button class="btn btn-outline" id="refresh-history-btn">↻ Refresh</button>
+          <button class="btn btn-outline" id="export-csv-btn">⬇ Export CSV</button>
+        </div>
+      </div>
+      <div id="history-table-wrap"></div>
+    </section>
+
+  </main>
+</div><!-- /#app-view -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SIGNATURE CONFIRMATION MODAL
+     — appears BEFORE the API call so the user consciously reviews
+       what they are about to submit to the audit trail
+═══════════════════════════════════════════════════════════════════ -->
+<dialog id="signature-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>🔏 Signature Confirmation Required</h2>
+    </div>
+    <div class="modal-body">
+      <!-- Pre-validation warnings — populated by openSignatureModal() if any checks fire -->
+      <div id="pre-warnings-wrap" class="pre-warnings-wrap hidden"></div>
+      <!-- Dynamically built from App.user + form inputs before showing -->
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:.9rem">
+        Please review the statement below before signing.
+      </p>
+      <div class="signature-statement" id="signature-statement"></div>
+      <div class="checkbox-wrap">
+        <input type="checkbox" id="audit-trail-confirm" />
+        <label for="audit-trail-confirm">
+          I understand this calculation will be <strong>permanently recorded</strong> in
+          the audit trail with my full name and timestamp.
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" id="sig-cancel-btn">Cancel</button>
+      <!-- Enabled only once the checkbox above is checked -->
+      <button class="btn btn-primary" id="sig-confirm-btn" disabled>Sign &amp; Calculate</button>
+    </div>
+  </div>
+</dialog>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CALCULATION DETAILS MODAL
+     — opened from the history table "View" button
+═══════════════════════════════════════════════════════════════════ -->
+<dialog id="details-modal" class="modal-large">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Calculation Details</h2>
+      <button class="btn btn-icon" id="details-close-btn" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="details-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="window.print()">🖨 Print</button>
+      <button class="btn btn-primary" id="details-done-btn">Close</button>
+    </div>
+  </div>
+</dialog>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     APPLICATION JAVASCRIPT
+═══════════════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ─────────────────────────────────────────────────────────────────────
+   STATE  — single mutable object; never access DOM globals directly
+   ───────────────────────────────────────────────────────────────────── */
+const App = {
+  user:           null,   // SafeUser from /api/auth/me
+  drugs:          [],     // Drug[] from /api/drugs
+  diluents:       [],     // Diluent[] from /api/diluents
+  history:        [],     // Calculation[] from /api/calculations/history
+  lastResult:     null,   // Most recent API response
+  pendingInputs:  null,   // Form values captured when modal opens
+  historyVisible: false,
+};
+
+/* ─────────────────────────────────────────────────────────────────────
+   API LAYER  — centralised fetch wrapper; throws on non-2xx
+   ───────────────────────────────────────────────────────────────────── */
+const API = {
+  async request(method, path, body) {
+    const opts = {
+      method,
+      credentials: 'same-origin',   // send session cookie
+      headers: { 'Content-Type': 'application/json' },
+    };
+    if (body !== undefined) opts.body = JSON.stringify(body);
+    const res = await fetch(path, opts);
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg =
+        json.error ||
+        (Array.isArray(json.errors) ? json.errors.map(e => e.msg).join('; ') : null) ||
+        `HTTP ${res.status}`;
+      throw Object.assign(new Error(msg), {
+        status: res.status,
+        fieldErrors: Array.isArray(json.errors) ? json.errors : null,
+      });
+    }
+    return json;
+  },
+  get:    (path)        => API.request('GET',  path),
+  post:   (path, body)  => API.request('POST', path, body),
+  delete: (path)        => API.request('DELETE', path),
+};
+
+/* ─────────────────────────────────────────────────────────────────────
+   UI HELPERS
+   ───────────────────────────────────────────────────────────────────── */
+const $  = id => document.getElementById(id);
+const show = el => el.classList.remove('hidden');
+const hide = el => el.classList.add('hidden');
+
+function showGlobalError(msg) {
+  $('global-error-msg').textContent = msg;
+  show($('global-error'));
+}
+
+function formatDateTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso + (iso.endsWith('Z') ? '' : 'Z'));  // treat DB strings as UTC
+  return d.toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+
+/** Round a number to 2dp and add trailing zeros if needed. */
+function fmt(n) { return Number(n).toFixed(2); }
+
+/** Returns an HTML chip span for a validation status. */
+function statusChip(status) {
+  if (!status) return '<span class="status-chip chip-pass">PASS</span>';
+  const cls = status === 'PASS' ? 'chip-pass' : status === 'WARN' ? 'chip-warn' : 'chip-fail';
+  return `<span class="status-chip ${cls}">${status}</span>`;
+}
+
+function getDiluentName(id) {
+  if (!id) return null;
+  const d = App.diluents.find(d => d.id === Number(id));
+  return d ? d.name : null;
+}
+
+function getDrugName(id) {
+  if (!id) return null;
+  const d = App.drugs.find(d => d.id === Number(id));
+  return d ? d.name : null;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   AUTH
+   ───────────────────────────────────────────────────────────────────── */
+
+/** Check session on page load; show auth or app view accordingly. */
+async function checkAuth() {
+  try {
+    const { user } = await API.get('/api/auth/me');
+    App.user = user;
+    await enterApp();
+  } catch {
+    showAuthView();
+  }
+}
+
+function showAuthView() {
+  hide($('app-view'));
+  show($('auth-view'));
+  show($('login-wrap'));
+  hide($('register-wrap'));
+}
+
+async function enterApp() {
+  hide($('auth-view'));
+  show($('app-view'));
+  const displayName = App.user.full_name
+    ? `${App.user.full_name}${App.user.credentials ? ', ' + App.user.credentials : ''}`
+    : App.user.username;
+  $('header-user-name').textContent = displayName;
+
+  // Load reference data in parallel
+  await Promise.all([loadDrugs(), loadDiluents()]);
+}
+
+async function doLogin(e) {
+  e.preventDefault();
+  const btn = $('login-btn');
+  hide($('login-error'));
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Signing in…';
+
+  try {
+    const { user } = await API.post('/api/auth/login', {
+      username: $('login-username').value.trim(),
+      password: $('login-password').value,
+    });
+    App.user = user;
+    $('login-form').reset();
+    await enterApp();
+  } catch (err) {
+    $('login-error').textContent = err.message;
+    show($('login-error'));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+  }
+}
+
+async function doRegister(e) {
+  e.preventDefault();
+  const btn = $('register-btn');
+  hide($('register-error'));
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Creating account…';
+
+  const fullName    = $('reg-fullname').value.trim();
+  const credentials = $('reg-credentials').value.trim();
+  if (!fullName)    { $('register-error').textContent = 'Full name is required.'; show($('register-error')); btn.disabled = false; btn.textContent = 'Create Account'; return; }
+  if (!credentials) { $('register-error').textContent = 'Credentials are required.'; show($('register-error')); btn.disabled = false; btn.textContent = 'Create Account'; return; }
+
+  try {
+    const { user } = await API.post('/api/auth/register', {
+      username:    $('reg-username').value.trim(),
+      email:       $('reg-email').value.trim(),
+      password:    $('reg-password').value,
+      fullName,
+      credentials,
+    });
+    App.user = user;
+    $('register-form').reset();
+    clearRegFields();
+    await enterApp();
+  } catch (err) {
+    // Map API field errors back to the specific inputs
+    const fieldMap = {
+      username:    'reg-username',
+      email:       'reg-email',
+      password:    'reg-password',
+      fullName:    'reg-fullname',
+      credentials: 'reg-credentials',
+    };
+    if (err.fieldErrors && Array.isArray(err.fieldErrors)) {
+      let any = false;
+      err.fieldErrors.forEach(fe => {
+        const id = fieldMap[fe.path || fe.param];
+        if (id) { setRegFieldError(id, fe.msg); any = true; }
+      });
+      if (any) { hide($('register-error')); }
+      else     { $('register-error').textContent = err.message; show($('register-error')); }
+    } else {
+      $('register-error').textContent = err.message;
+      show($('register-error'));
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Create Account';
+  }
+}
+
+async function doLogout() {
+  try {
+    await API.post('/api/auth/logout');
+  } catch { /* ignore */ }
+  App.user = null;
+  App.history = [];
+  App.lastResult = null;
+  App.historyVisible = false;
+  hide($('results-card'));
+  hide($('history-card'));
+  $('history-toggle-btn').textContent = '📋 View Calculation History';
+  $('drug-search').value = '';
+  $('login-form').reset();
+  showAuthView();
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   DATA LOADING
+   ───────────────────────────────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────────────────────────────
+   REGISTRATION FIELD VALIDATION
+   ───────────────────────────────────────────────────────────────────── */
+
+const REG_RULES = {
+  'reg-username': {
+    hintId: 'hint-username',
+    validate: v => /^[a-zA-Z0-9]{3,30}$/.test(v),
+    hint: 'Must be 3–30 characters, letters and numbers only.',
+  },
+  'reg-email': {
+    hintId: 'hint-email',
+    validate: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+    hint: 'Enter a valid email address (e.g. j.smith@hospital.org).',
+  },
+  'reg-password': {
+    hintId: 'hint-password',
+    validate: v => v.length >= 8,
+    hint: 'Password must be at least 8 characters.',
+    ok:   v => `${v.length} character${v.length !== 1 ? 's' : ''} — looks good.`,
+  },
+  'reg-fullname': {
+    hintId: 'hint-fullname',
+    validate: v => v.trim().length >= 1 && v.trim().length <= 100,
+    hint: 'Full name is required.',
+  },
+  'reg-credentials': {
+    hintId: 'hint-credentials',
+    validate: v => v.trim().length >= 1 && v.trim().length <= 100,
+    hint: 'Credentials are required (e.g. PharmD, RPh).',
+  },
+};
+
+/** Validate a single registration field. Returns true if valid. */
+function validateRegField(fieldId) {
+  const rule  = REG_RULES[fieldId];
+  if (!rule) return true;
+  const input = $(fieldId);
+  const hint  = $(rule.hintId);
+  const value = input.value;
+
+  if (!value) {
+    input.classList.remove('valid', 'invalid');
+    hint.textContent = '';
+    hint.className = 'field-hint';
+    return false;
+  }
+  if (rule.validate(value)) {
+    input.classList.add('valid');
+    input.classList.remove('invalid');
+    hint.textContent = rule.ok ? rule.ok(value) : '';
+    hint.className = 'field-hint ok';
+    return true;
+  } else {
+    input.classList.add('invalid');
+    input.classList.remove('valid');
+    hint.textContent = rule.hint;
+    hint.className = 'field-hint error';
+    return false;
+  }
+}
+
+/** Set an explicit error message on a registration field (used for API errors). */
+function setRegFieldError(fieldId, message) {
+  const rule = REG_RULES[fieldId];
+  if (!rule) return;
+  const input = $(fieldId);
+  const hint  = $(rule.hintId);
+  input.classList.add('invalid');
+  input.classList.remove('valid');
+  hint.textContent = message;
+  hint.className = 'field-hint error';
+}
+
+/** Clear all registration field indicators (e.g. on form reset). */
+function clearRegFields() {
+  Object.keys(REG_RULES).forEach(id => {
+    const rule = REG_RULES[id];
+    $(id).classList.remove('valid', 'invalid');
+    $(rule.hintId).textContent = '';
+    $(rule.hintId).className = 'field-hint';
+  });
+}
+
+async function loadDrugs() {
+  try {
+    const { drugs } = await API.get('/api/drugs');
+    App.drugs = drugs;
+    const sel = $('drug-select');
+    sel.innerHTML = '<option value="">— None (no database entry) —</option>';
+    drugs.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.dataset.name = d.name.toLowerCase();
+      opt.textContent = d.name;
+      sel.appendChild(opt);
+    });
+    $('drug-search').value = '';
+  } catch (err) {
+    showGlobalError('Could not load drug list: ' + err.message);
+  }
+}
+
+/** Filters the drug dropdown as the user types in the search box. */
+function filterDrugSelect() {
+  const q = $('drug-search').value.toLowerCase().trim();
+  const sel = $('drug-select');
+  let firstVisible = null;
+  [...sel.options].forEach(opt => {
+    if (!opt.value) { opt.hidden = false; return; }
+    const match = !q || opt.dataset.name.includes(q);
+    opt.hidden = !match;
+    if (match && firstVisible === null) firstVisible = opt;
+  });
+  // If the currently selected drug is now hidden by the filter, clear it
+  const cur = sel.options[sel.selectedIndex];
+  if (cur && cur.value && cur.hidden) {
+    sel.value = '';
+    onDrugSelectChange();
+  }
+}
+
+async function loadDiluents() {
+  try {
+    const { diluents } = await API.get('/api/diluents');
+    App.diluents = diluents;
+    const sel = $('diluent-select');
+    sel.innerHTML = '<option value="">— None selected —</option>';
+    diluents.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = `${d.name} (${d.concentration_percent}%)`;
+      sel.appendChild(opt);
+    });
+  } catch (err) {
+    showGlobalError('Could not load diluent list: ' + err.message);
+  }
+}
+
+async function loadHistory() {
+  try {
+    const { calculations } = await API.get('/api/calculations/history?limit=50');
+    App.history = calculations;
+    renderHistoryTable();
+  } catch (err) {
+    $('history-table-wrap').innerHTML =
+      `<p class="empty-state" style="color:var(--danger)">Could not load history: ${err.message}</p>`;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   CALCULATOR — live preview + form validation
+   ───────────────────────────────────────────────────────────────────── */
+
+/** Returns the currently selected concentration unit. */
+function concUnit() { return $('conc-unit').value || 'mg/mL'; }
+
+/** Recalculates V1 locally as the user types, without any API call. */
+function updatePreview() {
+  const c1 = parseFloat($('c1').value);
+  const c2 = parseFloat($('c2').value);
+  const v2 = parseFloat($('v2').value);
+  const u  = concUnit();
+  const preview = $('live-preview');
+
+  if (isNaN(c1) || isNaN(c2) || isNaN(v2)) {
+    preview.innerHTML = '<span class="preview-hint">Enter C1, C2, and V2 to see the formula preview.</span>';
+    return;
+  }
+
+  if (c2 > c1) {
+    preview.innerHTML = '<span class="preview-error">⚠ C2 cannot exceed C1 — dilution cannot increase concentration.</span>';
+    return;
+  }
+
+  if (c1 === 0) {
+    preview.innerHTML = '<span class="preview-error">⚠ C1 must be greater than 0.</span>';
+    return;
+  }
+
+  const v1 = (c2 * v2) / c1;
+  const diluentVol = v2 - v1;
+
+  const drugSelVal  = $('drug-select').value;
+  const drugManVal  = $('drug-manual').value.trim();
+  const diluentSelVal = $('diluent-select').value;
+  const stockLabel   = (drugSelVal ? getDrugName(Number(drugSelVal)) : drugManVal) || 'stock solution';
+  const diluentLabel = (diluentSelVal ? getDiluentName(Number(diluentSelVal)) : null) || 'diluent';
+
+  preview.innerHTML = `
+    <div class="preview-formula">
+      V1 = (C2 × V2) / C1 = (${c2}&thinsp;${u} × ${v2}&thinsp;mL) / ${c1}&thinsp;${u} = <em>${fmt(v1)} mL</em>
+    </div>
+    <div class="preview-result">
+      → Take <strong>${fmt(v1)} mL</strong> of <strong>${stockLabel}</strong> and add
+      <strong>${fmt(diluentVol)} mL</strong> of <strong>${diluentLabel}</strong>
+      to reach <strong>${v2} mL</strong> at <strong>${c2}&thinsp;${u}</strong>
+    </div>`;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   CLIENT-SIDE PRE-VALIDATION  — mirrors server logic for modal preview
+   ───────────────────────────────────────────────────────────────────── */
+
+function preValidateCalc(c1, c2, v2, drugId, unit) {
+  const warnings = [];
+  const v1 = (c2 * v2) / c1;
+  const u  = unit || 'mg/mL';
+
+  // Concentration unchanged
+  if (c2 === c1) {
+    warnings.push({ code: 'CONC_UNCHANGED', severity: 'WARN',
+      message: 'Initial and final concentrations are equal — no dilution is occurring.' });
+  }
+
+  // Drug-specific concentration limits
+  if (drugId) {
+    const drug = App.drugs.find(d => d.id === drugId);
+    if (drug) {
+      const du = drug.concentration_unit || u;
+      if (drug.max_concentration !== null && c2 > drug.max_concentration) {
+        warnings.push({ code: 'CONC_ABOVE_DRUG_MAX', severity: 'FAIL',
+          message: `Final concentration (${c2} ${u}) exceeds the maximum safe concentration for ${drug.name} (${drug.max_concentration} ${du}).` });
+      }
+      if (drug.min_concentration !== null && c2 < drug.min_concentration) {
+        warnings.push({ code: 'CONC_BELOW_DRUG_MIN', severity: 'WARN',
+          message: `Final concentration (${c2} ${u}) is below the minimum practical concentration for ${drug.name} (${drug.min_concentration} ${du}). Verify therapeutic intent.` });
+      }
+    }
+  }
+
+  // Dilution ratio
+  if (c1 > 0 && c2 > 0) {
+    const ratio = c1 / c2;
+    if (ratio > 10) {
+      warnings.push({ code: 'RATIO_EXCESSIVE', severity: 'WARN',
+        message: `Dilution ratio of 1:${ratio.toFixed(1)} exceeds 1:10. Verify the target concentration is intentional and that intermediate dilution steps are not required.` });
+    } else if (ratio < 2) {
+      warnings.push({ code: 'RATIO_MINIMAL', severity: 'WARN',
+        message: `Dilution ratio of 1:${ratio.toFixed(2)} is less than 1:2. This is a minimal dilution — confirm whether dilution is necessary.` });
+    }
+  }
+
+  // Small stock volume
+  if (v1 > 0 && v1 < 0.1) {
+    warnings.push({ code: 'VOL1_TOO_SMALL', severity: 'WARN',
+      message: `Volume of stock needed (${v1.toFixed(3)} mL) is less than 0.1 mL and may be difficult to measure accurately. Consider using a graduated syringe.` });
+  }
+
+  // Unusually large final volume
+  if (v2 > 1000) {
+    warnings.push({ code: 'VOL2_UNUSUALLY_LARGE', severity: 'WARN',
+      message: `Final volume (${v2} mL) is unusually large (>1000 mL). Verify units and intent.` });
+  }
+
+  return warnings;
+}
+
+/** Validates the form and opens the signature confirmation modal. */
+function openSignatureModal() {
+  const c1 = parseFloat($('c1').value);
+  const c2 = parseFloat($('c2').value);
+  const v2 = parseFloat($('v2').value);
+  const drugSel  = $('drug-select').value;
+  const drugMan  = $('drug-manual').value.trim();
+  const diluentId = $('diluent-select').value;
+  const intendedUse   = $('intended-use').value;
+  const patientContext = $('patient-context').value;
+
+  // ── Client-side validation ─────────────────────────────────────
+  if (isNaN(c1) || c1 <= 0) { alert('Please enter a valid initial concentration (C1 > 0).'); return; }
+  if (isNaN(c2) || c2 < 0)  { alert('Please enter a valid desired concentration (C2 ≥ 0).'); return; }
+  if (c2 > c1) { alert('C2 cannot exceed C1 — dilution cannot increase concentration.'); return; }
+  if (isNaN(v2) || v2 <= 0) { alert('Please enter a valid final volume (V2 > 0).'); return; }
+
+  const unit = concUnit();
+
+  // Save inputs so the API call can use them after modal confirms
+  App.pendingInputs = {
+    type: 'c1v1',
+    unit,
+    c1, c2, v2,
+    drugId:         drugSel ? Number(drugSel) : undefined,
+    drugNameManual: !drugSel && drugMan ? drugMan : undefined,
+    diluentId:      diluentId ? Number(diluentId) : undefined,
+    intendedUse:    intendedUse || undefined,
+    patientContext: patientContext || undefined,
+    notes:          $('notes-input').value.trim() || undefined,
+  };
+
+  // ── Build the signature statement ─────────────────────────────
+  const user = App.user;
+  const signerName = user.full_name
+    ? `${user.full_name}${user.credentials ? ', ' + user.credentials : ''}`
+    : user.username;
+
+  const drugLabel =
+    (drugSel ? getDrugName(Number(drugSel)) : drugMan) || 'unspecified drug';
+  const useLabel   = intendedUse   || 'unspecified use';
+  const ctxLabel   = patientContext || 'unspecified context';
+
+  $('signature-statement').innerHTML =
+    `I, <strong>${signerName}</strong>, confirm that I have reviewed this
+     dilution calculation request:<br><br>
+     &nbsp;&nbsp;• Drug: <strong>${drugLabel}</strong><br>
+     &nbsp;&nbsp;• C1 → C2: <strong>${c1}&thinsp;${unit} → ${c2}&thinsp;${unit}</strong>
+         &nbsp;|&nbsp; Final Volume: <strong>${v2} mL</strong><br>
+     &nbsp;&nbsp;• Intended use: <strong>${useLabel}</strong>
+         in a <strong>${ctxLabel}</strong> setting.<br><br>
+     I take full professional responsibility for this calculation.`;
+
+  // ── Pre-validation warnings ───────────────────────────────────
+  const preWarnings = preValidateCalc(c1, c2, v2, drugSel ? Number(drugSel) : undefined, unit);
+  const wrapEl = $('pre-warnings-wrap');
+  if (preWarnings.length > 0) {
+    const hasFail = preWarnings.some(w => w.severity === 'FAIL');
+    wrapEl.innerHTML =
+      `<div class="pre-warn-label">${hasFail ? '🚫 Safety check failures' : '⚠ Safety check warnings'} — review before signing:</div>` +
+      preWarnings.map(w => {
+        const cls  = w.severity === 'FAIL' ? 'fail' : 'warn';
+        const icon = w.severity === 'FAIL' ? '🚫' : '⚠️';
+        return `<div class="status-banner ${cls}" style="font-size:.88rem">
+          <span class="banner-icon">${icon}</span>
+          <div><span class="banner-code">${w.code}</span>${w.message}</div>
+        </div>`;
+      }).join('');
+    show(wrapEl);
+  } else {
+    wrapEl.innerHTML = '';
+    hide(wrapEl);
+  }
+
+  // Reset modal checkbox so "Sign" is disabled until checked
+  $('audit-trail-confirm').checked = false;
+  $('sig-confirm-btn').disabled = true;
+
+  $('signature-modal').showModal();
+}
+
+/** Called when "Sign & Calculate" is clicked inside the modal. */
+async function submitCalculation() {
+  $('signature-modal').close();
+  const btn = $('calculate-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Calculating…';
+
+  try {
+    const payload = { ...App.pendingInputs, signatureConfirmed: true };
+    const data = await API.post('/api/calculations', payload);
+    App.lastResult = data;
+    showResults(data, App.pendingInputs);
+    // Quietly refresh history in the background
+    loadHistory();
+  } catch (err) {
+    showGlobalError('Calculation failed: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Calculate &amp; Sign ›';
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   RESULTS  — render API response into the results card
+   ───────────────────────────────────────────────────────────────────── */
+
+function showResults(data, inputs) {
+  const v1 = Number(data.result);          // volume of stock solution
+  const diluentVol = inputs.v2 - v1;       // volume of diluent to add
+
+  const diluentName =
+    (inputs.diluentId ? getDiluentName(inputs.diluentId) : null) || 'diluent';
+  const drugLabel =
+    (inputs.drugId ? getDrugName(inputs.drugId) : inputs.drugNameManual) || 'stock solution';
+
+  const unit = inputs.unit || 'mg/mL';
+
+  // ── Main result block ────────────────────────────────────────
+  $('result-main').innerHTML = `
+    <div class="result-main">
+      <div class="result-row">
+        <span class="result-label">Volume of Stock Solution Needed (V1):</span>
+        <span class="result-value">${fmt(v1)}</span>
+        <span class="result-unit">mL</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Volume of Diluent to Add (V2 − V1):</span>
+        <span class="result-value">${fmt(diluentVol)}</span>
+        <span class="result-unit">mL</span>
+      </div>
+      <div class="result-instructions">
+        <strong>Instructions:</strong>
+        Measure <strong>${fmt(v1)} mL</strong> of <strong>${drugLabel} (${inputs.c1}&thinsp;${unit})</strong>
+        and add <strong>${fmt(diluentVol)} mL</strong> of <strong>${diluentName}</strong>
+        to achieve <strong>${inputs.v2} mL</strong> of a <strong>${inputs.c2}&thinsp;${unit}</strong> solution.
+      </div>
+    </div>`;
+
+  // ── Warnings / PASS banner ────────────────────────────────────
+  const audit  = data.audit || {};
+  const warns  = audit.warnings || [];
+  const status = audit.validationStatus || 'PASS';
+  let warningsHtml = '<div class="warnings-wrap">';
+
+  if (warns.length === 0) {
+    warningsHtml += `<div class="status-banner pass">
+      <span class="banner-icon">✅</span>
+      <div><span class="banner-code">PASS</span> All safety checks passed. No warnings.</div>
+    </div>`;
+  } else {
+    warns.forEach(w => {
+      const cls  = w.severity === 'FAIL' ? 'fail' : 'warn';
+      const icon = w.severity === 'FAIL' ? '🚫' : '⚠️';
+      warningsHtml += `<div class="status-banner ${cls}">
+        <span class="banner-icon">${icon}</span>
+        <div><span class="banner-code">${w.code}</span>${w.message}</div>
+      </div>`;
+    });
+  }
+  warningsHtml += '</div>';
+  $('result-warnings').innerHTML = warningsHtml;
+
+  // ── Audit trail footer ────────────────────────────────────────
+  $('result-audit').innerHTML = `
+    <div class="audit-item">Signed by: <strong>${audit.signedBy || '—'}</strong></div>
+    <div class="audit-item">Date/Time: <strong>${formatDateTime(audit.recordedAt)}</strong></div>
+    <div class="audit-item">Audit Trail ID: <strong>#${data.id}</strong></div>
+    <div class="audit-item">Status: ${statusChip(status)}</div>
+    ${inputs.intendedUse   ? `<div class="audit-item">Intended Use: <strong>${inputs.intendedUse}</strong></div>` : ''}
+    ${inputs.patientContext ? `<div class="audit-item">Patient Context: <strong>${inputs.patientContext}</strong></div>` : ''}`;
+
+  show($('results-card'));
+  $('results-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   HISTORY
+   ───────────────────────────────────────────────────────────────────── */
+
+function renderHistoryTable() {
+  const wrap = $('history-table-wrap');
+  if (!App.history.length) {
+    wrap.innerHTML = `<div class="empty-state">
+      <div style="font-size:2rem">📋</div>
+      <p>No calculations yet. Run your first calculation above.</p>
+    </div>`;
+    return;
+  }
+
+  let rows = '';
+  App.history.forEach(calc => {
+    const inp = typeof calc.input  === 'string' ? JSON.parse(calc.input)  : calc.input;
+    const res = typeof calc.result === 'string' ? JSON.parse(calc.result) : calc.result;
+    const drugLabel   = calc.drug_name_manual || getDrugName(calc.drug_id) || '—';
+    const diluentLabel = getDiluentName(calc.diluent_id) || '—';
+    const v1 = Number(res.result);
+
+    const hUnit = inp.unit || 'mg/mL';
+    rows += `<tr>
+      <td>${formatDateTime(calc.created_at)}</td>
+      <td>${drugLabel}<br><span style="color:var(--muted);font-size:.8rem">→ ${diluentLabel}</span></td>
+      <td class="mono">${inp.c1 ?? '—'}&thinsp;${hUnit} → ${inp.c2 ?? '—'}&thinsp;${hUnit}</td>
+      <td class="mono">${fmt(v1)} / ${inp.v2 ?? '—'} mL</td>
+      <td>${statusChip(calc.validation_status)}</td>
+      <td>
+        <button class="btn btn-outline" style="padding:.3rem .7rem;font-size:.8rem"
+          onclick="viewCalculationDetails(${calc.id})">View</button>
+      </td>
+    </tr>`;
+  });
+
+  wrap.innerHTML = `
+    <div class="history-table-scroll">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Date / Time</th>
+            <th>Drug → Diluent</th>
+            <th>C1 → C2</th>
+            <th>V1 / V2</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+async function viewCalculationDetails(id) {
+  try {
+    const calc = await API.get(`/api/calculations/${id}`);
+    const inp  = typeof calc.input  === 'string' ? JSON.parse(calc.input)  : calc.input;
+    const res  = typeof calc.result === 'string' ? JSON.parse(calc.result) : calc.result;
+    const warns = calc.warnings || [];
+
+    const v1 = Number(res.result);
+    const diluentVol = (inp.v2 || 0) - v1;
+
+    let warningsHtml = '';
+    if (warns.length > 0) {
+      warningsHtml = warns.map(w => {
+        const cls  = w.severity === 'FAIL' ? 'fail' : 'warn';
+        const icon = w.severity === 'FAIL' ? '🚫' : '⚠️';
+        return `<div class="status-banner ${cls}" style="margin-bottom:.4rem">
+          <span class="banner-icon">${icon}</span>
+          <div><span class="banner-code">${w.code}</span>${w.message}</div>
+        </div>`;
+      }).join('');
+    } else {
+      warningsHtml = '<div class="status-banner pass"><span class="banner-icon">✅</span><div>No warnings — all checks passed.</div></div>';
+    }
+
+    $('details-modal-body').innerHTML = `
+      <div class="detail-section">
+        <h4>Calculation</h4>
+        <dl class="detail-grid">
+          <dt>Drug</dt>
+          <dd>${calc.drug_name_manual || getDrugName(calc.drug_id) || '—'}</dd>
+          <dt>Diluent</dt>
+          <dd>${getDiluentName(calc.diluent_id) || '—'}</dd>
+          <dt>C1 (Initial)</dt><dd>${inp.c1 ?? '—'} ${inp.unit || 'mg/mL'}</dd>
+          <dt>C2 (Target)</dt><dd>${inp.c2 ?? '—'} ${inp.unit || 'mg/mL'}</dd>
+          <dt>V2 (Final Volume)</dt><dd>${inp.v2 ?? '—'} mL</dd>
+          <dt>V1 (Stock Volume)</dt><dd>${fmt(v1)} mL</dd>
+          <dt>Diluent Volume</dt><dd>${fmt(diluentVol)} mL</dd>
+        </dl>
+      </div>
+      <div class="detail-section">
+        <h4>Context</h4>
+        <dl class="detail-grid">
+          <dt>Intended Use</dt>    <dd>${calc.intended_use    || '—'}</dd>
+          <dt>Patient Context</dt> <dd>${calc.patient_context || '—'}</dd>
+          <dt>Notes</dt>           <dd>${calc.notes           || '—'}</dd>
+        </dl>
+      </div>
+      <div class="detail-section">
+        <h4>Safety Validation</h4>
+        ${warningsHtml}
+      </div>
+      <div class="detail-section">
+        <h4>Audit Trail</h4>
+        <dl class="detail-grid">
+          <dt>Signed By</dt>       <dd>${calc.user_signature || '—'}</dd>
+          <dt>Date / Time</dt>     <dd>${formatDateTime(calc.created_at)}</dd>
+          <dt>Audit Trail ID</dt>  <dd>#${calc.id}</dd>
+          <dt>Status</dt>          <dd>${statusChip(calc.validation_status)}</dd>
+        </dl>
+      </div>`;
+
+    $('details-modal').showModal();
+  } catch (err) {
+    showGlobalError('Could not load calculation details: ' + err.message);
+  }
+}
+
+function exportCSV() {
+  if (!App.history.length) { alert('No calculations in history to export.'); return; }
+
+  const headers = ['ID','Date/Time','Drug','Diluent','Unit','C1','C2','V2 (mL)','V1 (mL)','Status','Intended Use','Patient Context','Notes'];
+  const rows = App.history.map(calc => {
+    const inp = typeof calc.input  === 'string' ? JSON.parse(calc.input)  : calc.input;
+    const res = typeof calc.result === 'string' ? JSON.parse(calc.result) : calc.result;
+    const v1  = Number(res.result);
+    return [
+      calc.id,
+      formatDateTime(calc.created_at),
+      calc.drug_name_manual || getDrugName(calc.drug_id) || '',
+      getDiluentName(calc.diluent_id) || '',
+      inp.unit || 'mg/mL',
+      inp.c1 ?? '',
+      inp.c2 ?? '',
+      inp.v2 ?? '',
+      fmt(v1),
+      calc.validation_status || '',
+      calc.intended_use    || '',
+      calc.patient_context || '',
+      calc.notes           || '',
+    ].map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',');
+  });
+
+  const csv  = [headers.join(','), ...rows].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `dilution-history-${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   EXAMPLE LOADER  — pre-fills Gentamicin 40 → 2 mg/mL, 100 mL
+   ───────────────────────────────────────────────────────────────────── */
+async function loadExample() {
+  // Set unit first
+  $('conc-unit').value = 'mg/mL';
+  $('c1-unit-label').textContent = 'mg/mL';
+  $('c2-unit-label').textContent = 'mg/mL';
+
+  // Clinical example: dilute Gentamicin 40 mg/mL stock → 2 mg/mL, final volume 100 mL
+  // V1 = (2 × 100) / 40 = 5 mL stock + 95 mL diluent
+  $('c1').value = 40;
+  $('c2').value = 2;
+  $('v2').value = 100;
+
+  // Select Gentamicin from drug database if present
+  const gentamicin = App.drugs.find(d => d.name.toLowerCase().includes('gentamicin'));
+  if (gentamicin) {
+    $('drug-select').value = gentamicin.id;
+    $('drug-manual').value = '';
+    onDrugSelectChange();
+  } else {
+    $('drug-select').value = '';
+    $('drug-manual').value = 'Gentamicin';
+    onDrugSelectChange();
+  }
+
+  // Select Normal Saline as diluent
+  const ns = App.diluents.find(d => d.name.toLowerCase().includes('normal saline'));
+  if (ns) $('diluent-select').value = ns.id;
+  onDiluentChange();
+
+  // Set context
+  $('intended-use').value    = 'IV Medication';
+  $('patient-context').value = 'NICU';
+
+  updatePreview();
+  $('calculator-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   DYNAMIC FIELD BEHAVIOUR
+   ───────────────────────────────────────────────────────────────────── */
+
+/** Show/hide drug safety limits card when a database drug is selected. */
+function onDrugSelectChange() {
+  const id  = $('drug-select').value;
+  const card = $('drug-limits-card');
+  if (!id) { hide(card); return; }
+
+  const drug = App.drugs.find(d => d.id === Number(id));
+  if (!drug) { hide(card); return; }
+
+  const dUnit = drug.concentration_unit || 'mg/mL';
+  $('drug-limits-name').textContent    = drug.name;
+  $('drug-min').textContent     = drug.min_concentration     !== null ? `${drug.min_concentration} ${dUnit}` : '—';
+  $('drug-default').textContent = drug.default_concentration !== null ? `${drug.default_concentration} ${dUnit}` : '—';
+  $('drug-max').textContent     = drug.max_concentration     !== null ? `${drug.max_concentration} ${dUnit}` : '—';
+
+  // Auto-set the concentration unit selector to match the selected drug
+  if (drug.concentration_unit) {
+    const opt = [...$('conc-unit').options].find(o => o.value === drug.concentration_unit);
+    if (opt) {
+      $('conc-unit').value = drug.concentration_unit;
+      $('c1-unit-label').textContent = drug.concentration_unit;
+      $('c2-unit-label').textContent = drug.concentration_unit;
+      updatePreview();
+    }
+  }
+  show(card);
+
+  // Clear manual field to avoid sending both
+  $('drug-manual').value = '';
+  updatePreview();
+}
+
+/** Show diluent info card when a diluent is selected. */
+function onDiluentChange() {
+  const id   = $('diluent-select').value;
+  const card = $('diluent-info-card');
+  if (!id) { hide(card); return; }
+
+  const dil = App.diluents.find(d => d.id === Number(id));
+  if (!dil) { hide(card); return; }
+
+  $('diluent-info-name').textContent   = dil.name;
+  $('diluent-info-conc').textContent   = `${dil.concentration_percent}%`;
+  $('diluent-safety-note').textContent = dil.safety_notes || '';
+  show(card);
+  updatePreview();
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   EVENT LISTENERS
+   ───────────────────────────────────────────────────────────────────── */
+
+// Auth forms
+$('login-form').addEventListener('submit', doLogin);
+$('register-form').addEventListener('submit', doRegister);
+$('logout-btn').addEventListener('click', doLogout);
+$('go-register').addEventListener('click', e => {
+  e.preventDefault();
+  hide($('login-wrap'));
+  show($('register-wrap'));
+});
+$('go-login').addEventListener('click', e => {
+  e.preventDefault();
+  hide($('register-wrap'));
+  show($('login-wrap'));
+  clearRegFields();
+  hide($('register-error'));
+});
+
+// Registration field live validation
+Object.keys(REG_RULES).forEach(id => {
+  const el = $(id);
+  if (!el) return;
+  // On blur: always validate and show result
+  el.addEventListener('blur', () => { if (el.value) validateRegField(id); });
+  // On input: re-validate only if field already has a state (so errors clear as user types)
+  el.addEventListener('input', () => {
+    if (el.classList.contains('invalid') || el.classList.contains('valid')) {
+      validateRegField(id);
+    }
+  });
+});
+
+// Calculator live preview
+['c1','c2','v2'].forEach(id => $(id).addEventListener('input', updatePreview));
+$('conc-unit').addEventListener('change', function() {
+  const u = this.value;
+  $('c1-unit-label').textContent = u;
+  $('c2-unit-label').textContent = u;
+  updatePreview();
+});
+$('drug-search').addEventListener('input', filterDrugSelect);
+$('drug-select').addEventListener('change', onDrugSelectChange);
+$('drug-manual').addEventListener('input', updatePreview);
+$('diluent-select').addEventListener('change', onDiluentChange);
+
+// Open signature modal on Calculate click
+$('calculate-btn').addEventListener('click', openSignatureModal);
+
+// Example loader
+$('example-btn').addEventListener('click', loadExample);
+
+// Signature modal
+$('audit-trail-confirm').addEventListener('change', function() {
+  $('sig-confirm-btn').disabled = !this.checked;
+});
+$('sig-cancel-btn').addEventListener('click', () => $('signature-modal').close());
+$('sig-confirm-btn').addEventListener('click', submitCalculation);
+
+// Results actions
+$('new-calc-btn').addEventListener('click', () => {
+  hide($('results-card'));
+  $('calculator-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+$('view-history-from-results').addEventListener('click', () => {
+  show($('history-card'));
+  App.historyVisible = true;
+  $('history-toggle-btn').textContent = '📋 Hide History';
+  $('history-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+// History toggle
+$('history-toggle-btn').addEventListener('click', async () => {
+  App.historyVisible = !App.historyVisible;
+  if (App.historyVisible) {
+    show($('history-card'));
+    $('history-toggle-btn').textContent = '📋 Hide History';
+    await loadHistory();
+    $('history-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    hide($('history-card'));
+    $('history-toggle-btn').textContent = '📋 View Calculation History';
+  }
+});
+$('refresh-history-btn').addEventListener('click', loadHistory);
+$('export-csv-btn').addEventListener('click', exportCSV);
+
+// Details modal close
+$('details-close-btn').addEventListener('click', () => $('details-modal').close());
+$('details-done-btn').addEventListener('click',  () => $('details-modal').close());
+
+// Close modals when clicking the backdrop
+['signature-modal','details-modal'].forEach(id => {
+  $(id).addEventListener('click', e => { if (e.target === $(id)) $(id).close(); });
+});
+
+/* ─────────────────────────────────────────────────────────────────────
+   INIT  — entry point: check session, then show appropriate view
+   ───────────────────────────────────────────────────────────────────── */
+checkAuth();
+</script>
+
+</body>
+</html>
