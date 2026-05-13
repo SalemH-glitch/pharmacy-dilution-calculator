@@ -1084,7 +1084,7 @@ function getDrugName(id) {
    AUTH
    ───────────────────────────────────────────────────────────────────── */
 
-/** Auth is handled by rx-bar (Supabase) — skip Express session check. */
+/** Called by rx-bar once Supabase session is confirmed. */
 async function checkAuth() {
   App.user = {};
   await enterApp();
@@ -1970,9 +1970,9 @@ $('details-done-btn').addEventListener('click',  () => $('details-modal').close(
 });
 
 /* ─────────────────────────────────────────────────────────────────────
-   INIT  — entry point: check session, then show appropriate view
+   INIT  — enterApp() is triggered by rx-bar after Supabase auth confirms
    ───────────────────────────────────────────────────────────────────── */
-checkAuth();
+document.addEventListener('rxb:ready', () => checkAuth());
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
