@@ -1084,15 +1084,10 @@ function getDrugName(id) {
    AUTH
    ───────────────────────────────────────────────────────────────────── */
 
-/** Check session on page load; show auth or app view accordingly. */
+/** Auth is handled by rx-bar (Supabase) — skip Express session check. */
 async function checkAuth() {
-  try {
-    const { user } = await API.get('/api/auth/me');
-    App.user = user;
-    await enterApp();
-  } catch {
-    showAuthView();
-  }
+  App.user = {};
+  await enterApp();
 }
 
 function showAuthView() {
@@ -1105,10 +1100,7 @@ function showAuthView() {
 async function enterApp() {
   hide($('auth-view'));
   show($('app-view'));
-  const displayName = App.user.full_name
-    ? `${App.user.full_name}${App.user.credentials ? ', ' + App.user.credentials : ''}`
-    : App.user.username;
-  $('header-user-name').textContent = displayName;
+  $('header-user-name').textContent = '';
 
   // Load reference data in parallel
   await Promise.all([loadDrugs(), loadDiluents()]);
@@ -1190,19 +1182,7 @@ async function doRegister(e) {
 }
 
 async function doLogout() {
-  try {
-    await API.post('/api/auth/logout');
-  } catch { /* ignore */ }
-  App.user = null;
-  App.history = [];
-  App.lastResult = null;
-  App.historyVisible = false;
-  hide($('results-card'));
-  hide($('history-card'));
-  $('history-toggle-btn').textContent = '📋 View Calculation History';
-  $('drug-search').value = '';
-  $('login-form').reset();
-  showAuthView();
+  // Sign-out is handled by rx-bar; this is a no-op fallback
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -1486,24 +1466,22 @@ function openSignatureModal() {
 
   const unit = concUnit();
 
+  // Get signer name from rx-bar (Supabase) since Express auth is no longer used
+  const signerName = document.querySelector('.rxb-username')?.textContent?.trim() || 'Pharmacist';
+
   // Save inputs so the API call can use them after modal confirms
   App.pendingInputs = {
     type: 'c1v1',
     unit,
     c1, c2, v2,
-    drugId:         drugSel ? Number(drugSel) : undefined,
-    drugNameManual: !drugSel && drugMan ? drugMan : undefined,
-    diluentId:      diluentId ? Number(diluentId) : undefined,
-    intendedUse:    intendedUse || undefined,
-    patientContext: patientContext || undefined,
-    notes:          $('notes-input').value.trim() || undefined,
+    drugId:              drugSel ? Number(drugSel) : undefined,
+    drugNameManual:      !drugSel && drugMan ? drugMan : undefined,
+    diluentId:           diluentId ? Number(diluentId) : undefined,
+    intendedUse:         intendedUse || undefined,
+    patientContext:      patientContext || undefined,
+    notes:               $('notes-input').value.trim() || undefined,
+    pharmacistSignature: signerName,
   };
-
-  // ── Build the signature statement ─────────────────────────────
-  const user = App.user;
-  const signerName = user.full_name
-    ? `${user.full_name}${user.credentials ? ', ' + user.credentials : ''}`
-    : user.username;
 
   const drugLabel =
     (drugSel ? getDrugName(Number(drugSel)) : drugMan) || 'unspecified drug';

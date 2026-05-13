@@ -1,15 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { body, param, validationResult } from 'express-validator';
-import { requireAuth } from '../middleware/auth';
 import { calculate } from '../services/dilutionService';
 import { validateCalculation } from '../services/validationService';
-import { getUserById } from '../services/authService';
 import db, { nextId, nowIso } from '../database/db';
 import { Calculation, DilutionInput } from '../models/Calculation';
 
 const router = Router();
-
-router.use(requireAuth);
 
 // ─── Validation rules ─────────────────────────────────────────────────────────
 
@@ -51,10 +47,8 @@ router.post('/', postValidation, (req: Request, res: Response, next: NextFunctio
   }
 
   try {
-    const user = getUserById(req.session.userId!);
-    const userSignature = [user.full_name, user.credentials]
-      .filter((s): s is string => Boolean(s))
-      .join(', ') || user.username;
+    const userSignature = (typeof req.body.pharmacistSignature === 'string' && req.body.pharmacistSignature.trim())
+      || 'Pharmacist';
 
     const input: DilutionInput = {
       type:                req.body.type,
@@ -79,7 +73,7 @@ router.post('/', postValidation, (req: Request, res: Response, next: NextFunctio
     const id = nextId(db.data.calculations);
     const calc: Calculation = {
       id,
-      user_id:           user.id,
+      user_id:           0,
       type:              input.type,
       input:             JSON.stringify(input),
       result:            JSON.stringify(calcResult),
@@ -120,7 +114,6 @@ router.get('/history', (req: Request, res: Response, next: NextFunction) => {
     const offset = Number(req.query.offset) || 0;
 
     const rows = db.data.calculations
-      .filter(c => c.user_id === req.session.userId)
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(offset, offset + limit);
 
@@ -151,7 +144,7 @@ router.get(
 
     try {
       const row = db.data.calculations.find(
-        c => c.id === Number(req.params.id) && c.user_id === req.session.userId
+        c => c.id === Number(req.params.id)
       );
 
       if (!row) {
