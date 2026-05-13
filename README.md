@@ -14,7 +14,7 @@ This pharmaceutical dilution calculator was built by a **Specialist IV Pharmacy 
 
 ### Real-World Problem Solved
 
-In hospital pharmacy, calculating precise IV dilutions is critical for patient safety — an error in concentration can be fatal, especially in neonatal and pediatric settings. This application automates the **C1×V1 = C2×V2** formula used daily in pharmacy practice, while adding comprehensive safety checks and a regulatory-compliant audit trail that mirrors professional pharmacy information systems (e.g., Pharmacy Keepers, Epic Willow).
+In a hospital pharmacy, calculating precise IV dilutions is critical for patient safety where an error in concentration can be fatal, especially in neonatal and pediatric settings. This application automates the **C1×V1 = C2×V2** formula used daily in pharmacy practice, while adding comprehensive safety checks and a regulatory-compliant audit trail that mirrors professional pharmacy information systems such as Epic.
 
 ---
 
@@ -39,8 +39,8 @@ In hospital pharmacy, calculating precise IV dilutions is critical for patient s
 ### Audit & Authentication
 - 🔐 **User authentication** with bcrypt password hashing (12 salt rounds)
 - ✍️ **Digital signatures** — every calculation requires an explicit professional confirmation step
-- 📋 **Comprehensive audit trail** — records who, what, when, why for regulatory compliance
-- 📊 **Calculation history** — paginated, filterable; export to CSV
+- 📋 **Comprehensive audit trail** — records who, what, when, and why for regulatory compliance
+- 📊 **Calculation history** — paginated and filterable; can be exported to CSV
 - 👤 **Credential-aware signatures** — full name + credentials (e.g. "Jane Smith, PharmD") attached to every record
 
 ---
@@ -58,7 +58,7 @@ In hospital pharmacy, calculating precise IV dilutions is critical for patient s
 | Testing | Jest 29 + ts-jest |
 | Frontend | Vanilla JS + modern CSS (no framework) |
 
-> **Why no ORM or SQL database?** The project intentionally uses a plain JSON store to eliminate native-compilation dependencies (e.g., `better-sqlite3` requires C++ build tools). This means `npm install` works immediately on any system without additional setup.
+> **Why no ORM or SQL database?** The project intentionally uses a plain JSON store to eliminate native-compilation dependencies (e.g., `better-sqlite3` which requires C++ build tools). This means `npm install` works immediately on any system without additional setup.
 
 ---
 
@@ -265,7 +265,7 @@ pharmacy-dilution-calc/
 
 ## 👨‍💻 About the Developer
 
-Built by **Salem Habtemichael** — Specialist IV Pharmacy Technician with 500+ hours of sterile compounding experience in the NICU and pediatric pharmacy at WVU Children's Hospital, currently applying that clinical domain knowledge to healthcare software engineering.
+Built by **Salem Hefeida**. I was a Specialist IV Pharmacy Technician with 500+ hours of sterile compounding experience in the pediatric pharmacy at WVU Children's Hospital, and I'm currently applying that expertise to healthcare software engineering.
 
 ### Skills Demonstrated in This Project
 
@@ -279,8 +279,8 @@ Built by **Salem Habtemichael** — Specialist IV Pharmacy Technician with 500+ 
 
 ---
 
-**Portfolio**: [github.com/SalemH-glitch](https://github.com/SalemH-glitch)
+**Portfolio**: https://github.com/SalemH-glitch
 
-**LinkedIn**: *(add your profile link)*
+**LinkedIn**: https://www.linkedin.com/in/salem-hefeida-2b7561230/
 
-**Email**: halyhabib@gmail.com
+**Email**: smh00053@mix.wvu.edu
