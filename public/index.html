@@ -2006,10 +2006,13 @@ if (window.RxBar) {
     // Pre-fill patient context if field exists
     const pc = document.getElementById('patient-context');
     if (pc) {
+      const existing = pc.querySelector('option[data-rxb]');
+      if (existing) existing.remove();
       const opt = document.createElement('option');
       opt.value = e.detail.patient_id;
       opt.textContent = `${e.detail.first_name} ${e.detail.last_name} (${e.detail.patient_id})`;
       opt.selected = true;
+      opt.dataset.rxb = '1';
       pc.appendChild(opt);
     }
     // Intercept the calculate button to also save to Supabase
